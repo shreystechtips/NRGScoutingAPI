@@ -10,8 +10,8 @@ app = flask.Flask(__name__)
 CORS(app)
 app.Debug = False
 
-f = open("api_keys.txt","r")
-stored_keys = f.read()
+# f = open("api_keys.txt","r")
+stored_keys = os.getenv("API_KEYS")
 
 cache_folder = os.path.join(os.path.dirname(__file__),'cache')
 

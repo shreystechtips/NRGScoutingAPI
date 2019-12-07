@@ -7,10 +7,23 @@
     <title>Log In</title>
   </head>
   <body>
+    <h1>Login Page for NRG Scouting API</h1>
     <a>{{ message }}</a>
+    <table>
+      <tr>
+        <td>
+          <a href="https://www.nrg948.com" target="_blank" rel="noreferrer"
+            >Main Site</a
+          >
+        </td>
+        <td><a href="/" rel="noreferrer">API Home</a></td>
+        <td><a href="/register" rel="noreferrer">Register</a></td>
+      </tr>
+    </table>
+
     <form method="POST" action="/login">
-      <input type="email" name="email" />
-      <input type="password" name="password" />
+      <input type="email" name="email" placeholder="email" />
+      <input type="password" name="password" placeholder="password" />
       <button type="submit">Login</button>
     </form>
   </body>

@@ -7,11 +7,24 @@
     <title>Sign Up</title>
   </head>
   <body>
+    <h1>Sign Up Page for NRG Scouting API</h1>
     <a>{{ message }}</a>
+    <table>
+      <tr>
+        <td>
+          <a href="https://www.nrg948.com" target="_blank" rel="noreferrer"
+            >Main Site</a
+          >
+        </td>
+        <td><a href="/" rel="noreferrer">API Home</a></td>
+        <td><a href="/login" rel="noreferrer">Login</a></td>
+      </tr>
+    </table>
+
     <form method="POST" action="/register">
-      <input type="email" name="email" />
-      <input type="password" name="password" />
-      <input type="number" name="team" />
+      <input type="email" name="email" placeholder="email" />
+      <input type="password" name="password" placeholder="password" />
+      <input type="number" name="team" placeholder="FRC Team Number" />
       <button type="submit">Login</button>
     </form>
   </body>

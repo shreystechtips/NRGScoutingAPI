@@ -27,7 +27,7 @@ BASE_API_URL = "https://www.thebluealliance.com/api/v3"
 API_KEY = os.getenv("TBA_KEY")
 
 
-con = psycopg2.connect(os.getenv("DB_URL"), sslmode='require')
+con = psycopg2.connect(os.getenv("DATABASE_URL"), sslmode='require')
 
 
 cur = con.cursor()

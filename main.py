@@ -1,4 +1,4 @@
-from flask import request, abort, jsonify, json, render_template
+from flask import request, abort, jsonify, json, render_template, redirect, url_for
 import flask
 from flask_cors import CORS
 import requests
@@ -36,7 +36,6 @@ postgres_exists_query = """ select * from users where {0} = {2}{1}{2} """
 
 
 def check_key(key):
-    print(key)
     cur.execute(postgres_exists_query.format(
         'auth_key', 'b\'\'' + key + '\'\'', '\''))
     return not cur.fetchone() == None
@@ -96,12 +95,13 @@ def get_teams(year, CACHE_CONST):
 
 @app.route('/', methods=['GET'])
 def main():
-    return render_template('index.html', message="")
+    message = ''
+    return render_template('index.html', message=message)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    message = ""
+    message = ''
     if request.method == 'POST':
         data = request.values
         users_doc = {
@@ -117,7 +117,7 @@ def register():
                 users_doc["password"]), int(users_doc['team']), str(hexlify(os.urandom(16))))
             cur.execute(postgres_insert_query, to_insert)
             con.commit()
-            return render_template('index.html', message="Successfully signed up! Log in to see API key")
+            return redirect(url_for('.login'))
         else:
             message = "User email already exists, please try signing in with password"
     return render_template('sign_up.html', message=message)
@@ -136,7 +136,6 @@ def login():
             'email', users_doc["email"], '\''))
         temp = cur.fetchone()
         if temp and bcrypt.check_password_hash(temp[1], users_doc['password']):
-            print(temp[3])
             message = "Your API Key is: " + \
                 str(temp[3])[2:len(temp[3])-1] + \
                 " DO NOT SHARE IT with anyone!"

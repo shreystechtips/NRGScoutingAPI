@@ -107,3 +107,4 @@ api_keys.txt
 .vscode/settings.json
 
 cache/
+*.code-workspace

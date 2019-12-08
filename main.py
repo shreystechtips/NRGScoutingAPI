@@ -155,7 +155,7 @@ def teams():
 
 @app.route('/event/teams', methods=['POST'])
 def event_teams():
-    CACHE_CONST = 'events'
+    CACHE_CONST = 'event'
     json_in = request.json
     if not check_key(json_in['API-Key']):
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
@@ -197,7 +197,7 @@ def process_team_keys(keys):
 # Takes parameters: API-Key, event_key, comp_level
 @app.route('/event/matches', methods=['POST'])
 def get_matches():
-    CACHE_CONST = 'events'
+    CACHE_CONST = 'event'
     json_in = request.json
     if not check_key(json_in['API-Key']):
         return abort(403)
@@ -209,7 +209,7 @@ def get_matches():
         abort(404)
 
     filename = json_in['event_key'] + '.matches.' + json_in[
-        'comp_level'] + '.txt'
+        'comp_level'] + '.' + str(json_in['uses_sets']) + '.txt'
 
     REGEX_PATTERN = re.compile("(^\w+_" + json_in['comp_level'] + "\d+)$")
 
@@ -225,14 +225,21 @@ def get_matches():
     for item in r:
         if item['comp_level'] == json_in['comp_level']:
             match_data = {}
-            all_data[str(item['set_number']) + ',' +
-                     str(item['match_number'])] = match_data
+            insert_val = ''
+            if json_in['uses_sets']:
+                insert_val = str(item['set_number']) + \
+                    ',' + str(item['match_number'])
+            else:
+                if(json_in['comp_level'] == 'qf' or json_in['comp_level'] == 'sf'):
+                    return jsonify(["cannot use numbers for qf or sf due to ties and rematches"]), 404
+                insert_val = str(item['set_number']*item['match_number'])
+            all_data[insert_val] = match_data
             alliances = item['alliances']
             match_data['blue'] = process_team_keys(
                 alliances['blue']['team_keys'])
             match_data['red'] = process_team_keys(
                 alliances['red']['team_keys'])
-
+    write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
     return jsonify(all_data), 200
 
 

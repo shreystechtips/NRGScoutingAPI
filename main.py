@@ -35,9 +35,9 @@ postgres_insert_query = """ INSERT INTO users (email, password, team, auth_key) 
 postgres_exists_query = """ select * from users where {0} = {2}{1}{2} """
 
 
-def check_key(key):
+def check_key():
     cur.execute(postgres_exists_query.format(
-        'auth_key', 'b\'\'' + key + '\'\'', '\''))
+        'auth_key', 'b\'\'' + request.headers.get('API-Key') + '\'\'', '\''))
     return not cur.fetchone() == None
 
 
@@ -144,11 +144,13 @@ def login():
     return render_template('login.html', message=message)
 
 
-@app.route('/teams', methods=['POST'])
+@app.route('/teams', methods=['POST', 'GET'])
 def teams():
+    if request.method == 'GET':
+        return
     CACHE_CONST = 'teams'
     json_in = request.json
-    if not check_key(json_in['API-Key']):
+    if not check_key():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
     return jsonify(get_teams(json_in['year'], CACHE_CONST)), 200
 
@@ -157,7 +159,7 @@ def teams():
 def event_teams():
     CACHE_CONST = 'event'
     json_in = request.json
-    if not check_key(json_in['API-Key']):
+    if not check_key():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
     r = requests.get(url=os.path.join(BASE_API_URL, 'event',
                                       json_in['event_key'], 'teams'), headers=auth_headers())
@@ -199,7 +201,7 @@ def process_team_keys(keys):
 def get_matches():
     CACHE_CONST = 'event'
     json_in = request.json
-    if not check_key(json_in['API-Key']):
+    if not check_key():
         return abort(403)
     r = requests.get(
         url=os.path.join(BASE_API_URL, 'event', json_in['event_key'],

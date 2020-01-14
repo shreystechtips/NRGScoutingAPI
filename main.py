@@ -143,7 +143,7 @@ def login():
             message = "Incorrect username or password"
     return render_template('login.html', message=message)
 
-
+# PARAMS: int(year)
 @app.route('/teams', methods=['POST', 'GET'])
 def teams():
     if request.method == 'GET':
@@ -154,23 +154,25 @@ def teams():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
     return jsonify(get_teams(json_in['year'], CACHE_CONST)), 200
 
-
+# PARAMS: str(event_key)
 @app.route('/event/teams', methods=['POST'])
 def event_teams():
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
-    r = requests.get(url=os.path.join(BASE_API_URL, 'event',
-                                      json_in['event_key'], 'teams'), headers=auth_headers())
-    if r.status_code == 404:
-        abort(404)
 
     filename = json_in['event_key'] + '.txt'
     txt,  update = update_cache(os.path.join(
         cache_folder, CACHE_CONST, filename))
     if not update:
         return jsonify(txt), 200
+
+    r = requests.get(url=os.path.join(BASE_API_URL, 'event',
+                                      json_in['event_key'], 'teams'), headers=auth_headers())
+    if r.status_code == 404:
+        abort(404)
+
     all_data = []
     r = r.json()
     for item in r:
@@ -196,19 +198,13 @@ def process_team_keys(keys):
     return teams
 
 
-# Takes parameters: API-Key, event_key, comp_level
+# Takes parameters: str(event_key), str(comp_level), bool(uses_sets)
 @app.route('/event/matches', methods=['POST'])
 def get_matches():
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
         return abort(403)
-    r = requests.get(
-        url=os.path.join(BASE_API_URL, 'event', json_in['event_key'],
-                         'matches', 'simple'),
-        headers=auth_headers())
-    if r.status_code == 404:
-        abort(404)
 
     filename = json_in['event_key'] + '.matches.' + json_in[
         'comp_level'] + '.' + str(json_in['uses_sets']) + '.txt'
@@ -219,8 +215,14 @@ def get_matches():
         os.path.join(cache_folder, CACHE_CONST, filename))
 
     if not update:
-        print('no update')
         return jsonify(txt), 200
+
+    r = requests.get(
+        url=os.path.join(BASE_API_URL, 'event', json_in['event_key'],
+                         'matches', 'simple'),
+        headers=auth_headers())
+    if r.status_code == 404:
+        abort(404)
 
     all_data = {}
     r = r.json()
@@ -270,3 +272,4 @@ def get_matches():
 
 if __name__ == '__main__':
     app.run()
+ssl_context = ('cert.pem', 'key.pem')

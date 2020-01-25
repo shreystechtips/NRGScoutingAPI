@@ -108,3 +108,4 @@ api_keys.txt
 
 cache/
 *.code-workspace
+service.json

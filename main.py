@@ -11,7 +11,22 @@ from binascii import hexlify
 from flask_bcrypt import Bcrypt
 import psycopg2
 from dotenv import load_dotenv
+import pyrebase
+import helper
+
 load_dotenv()
+
+config = {
+  "apiKey": os.getenv("FIREBASE_KEY"),
+  "authDomain": str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseapp.com",
+  "storageBucket": str(os.getenv("FIREBASE_PROJ_NAME")) + ".appspot.com",
+  "databaseURL": "https://" + str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseio.com",
+  "serviceAccount": helper.generate_google_service("service.json")
+}
+
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
+os.remove("service.json")
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -51,14 +66,19 @@ def simplify_data(data):
 
 
 def update_cache(path):
-    if os.path.isfile(path):
+    storage.child('/')
+    try:
+        if not os.path.exists(path):
+            storage.child(path).download(path)
         yearfile = open(path)
         try:
             date_file = datetime.strptime(yearfile.readline().strip(), '%c')
             if (datetime.utcnow()-date_file).days < 7:
                 return json.loads(yearfile.readline()), False
         except:
-            print('')
+            return [], True
+    except:
+        return [], True
     return [], True
 
 # Overwrites file with current time and stringifys the json
@@ -67,8 +87,12 @@ def update_cache(path):
 def write_to_file(data, file_path, filename):
     if not os.path.exists(file_path):
         os.makedirs(file_path)
-    f = open(os.path.join(file_path, filename), 'w')
+    path = os.path.join(file_path, filename)
+    f = open(path, 'w+')
     f.write(str(datetime.utcnow().strftime('%c'))+'\n'+json.dumps(data))
+    storage.child('/')
+    storage.child(path).put(path)
+    # os.remove(path)
 
 
 def get_teams(year, CACHE_CONST):

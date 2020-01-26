@@ -32,7 +32,7 @@ SECRET = os.getenv("SECRET")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 3
 
-cache_folder = os.path.join(os.path.dirname(__file__), 'cache')
+cache_folder = os.path.join('cache/')
 
 BASE_API_URL = "https://www.thebluealliance.com/api/v3"
 API_KEY = os.getenv("TBA_KEY")
@@ -89,9 +89,11 @@ def update_cache(path):
 
 
 def write_to_file(data, file_path, filename):
+    print(file_path)
     if not os.path.exists(file_path):
         os.makedirs(file_path)
     path = os.path.join(file_path, filename)
+    print(path)
     f = open(path, 'w+')
     f.write(str(datetime.utcnow().strftime('%c'))+'\n'+json.dumps(data))
     storage.child('/')

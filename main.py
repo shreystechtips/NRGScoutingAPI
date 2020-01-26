@@ -24,10 +24,6 @@ config = {
   "serviceAccount": helper.generate_google_service("service.json")
 }
 
-firebase = pyrebase.initialize_app(config)
-storage = firebase.storage()
-os.remove("service.json")
-
 app = flask.Flask(__name__)
 CORS(app)
 app.Debug = False
@@ -48,6 +44,14 @@ con = psycopg2.connect(os.getenv("DATABASE_URL"), sslmode='require')
 cur = con.cursor()
 postgres_insert_query = """ INSERT INTO users (email, password, team, auth_key) VALUES (%s,%s,%s,%s)"""
 postgres_exists_query = """ select * from users where {0} = {2}{1}{2} """
+
+# INIT FIREBASE
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
+try:
+    os.remove("service.json")
+except:
+    None   
 
 
 def check_key():

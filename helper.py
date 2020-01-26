@@ -3,8 +3,6 @@ import base64
 from dotenv import load_dotenv
 load_dotenv()
 
-# Takes FULL filename with extension
-
 
 def generate_google_service(fileName):
     open(fileName, "w+").write(base64ToString(os.getenv("FIREBASE_SERVICE_CODE")))

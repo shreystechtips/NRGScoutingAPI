@@ -276,6 +276,32 @@ def get_matches():
     write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
     return jsonify(all_data), 200
 
+@app.route('/events', methods=['POST'])
+def get_events():
+    CACHE_CONST = 'event'
+    json_in = request.json
+    if not check_key():
+        return abort(403)
+    
+    filename = json_in['year'] + '.events.all.txt'
+    txt, update = update_cache((os.path.join(cache_folder,CACHE_CONST,filename)))
+
+    if not update:
+        return jsonify(txt),200
+    
+    r = requests.get(
+        url=os.path.join(BASE_API_URL, 'events', json_in['year'] , 'simple'),
+        headers=auth_headers())
+    if r.status_code == 404:
+        abort(404)
+
+    all_data = []
+    r = r.json()
+    for item in r:
+        all_data.append({'name':item['name'],'key':item['key']})
+    write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
+    return jsonify(all_data), 200
+
 
 # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

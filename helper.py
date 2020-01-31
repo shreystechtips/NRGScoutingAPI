@@ -1,6 +1,7 @@
 import os
 import base64
 from dotenv import load_dotenv
+from flask import render_template
 load_dotenv()
 
 
@@ -15,3 +16,7 @@ def base64ToString(b):
 
 def stringToBase64(s):
     return base64.b64encode(s.encode('utf-8'))
+
+
+def render_doc_template(route):
+    return render_template('endpoints.html', name=route, body=open('./templates/endpoints/' + route[1:].replace('/', '.')+'.txt').read())

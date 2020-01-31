@@ -1,0 +1,10 @@
+Type of Request: POST
+Parameters: 'year' (string)
+Response Body Format:
+[
+    {
+        'name': 'Pacific Northwest District Championships', 
+        'key': '2019pncmp'
+    },
+    ...
+]

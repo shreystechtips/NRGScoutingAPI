@@ -1,0 +1,10 @@
+Type of Request: POST
+Parameters: 'year' (string)
+Response Body Format:
+[
+    {
+        'team_number': 948, 
+        'nickname': 'Newport Robotics Group (NRG)'
+    },
+    ...
+]

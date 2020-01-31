@@ -1,0 +1,10 @@
+Type of Request: POST
+Parameters: 'event_key' (string) using TBA format (e.g. 2020pncmp)
+Response Body Format:
+[
+    {
+        'team_number': 948, 
+        'nickname': 'Newport Robotics Group (NRG)'
+    },
+    ... for all teams at event
+]

@@ -177,16 +177,18 @@ def login():
 @app.route('/teams', methods=['POST', 'GET'])
 def teams():
     if request.method == 'GET':
-        return
+        return helper.render_doc_template(request.url_rule.rule)
     CACHE_CONST = 'teams'
     json_in = request.json
     if not check_key():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
-    return jsonify(get_teams(json_in['year'], CACHE_CONST)), 200
+    return jsonify(get_teams(str(json_in['year']), CACHE_CONST)), 200
 
 # PARAMS: str(event_key)
-@app.route('/event/teams', methods=['POST'])
+@app.route('/event/teams', methods=['POST', 'GET'])
 def event_teams():
+    if request.method == 'GET':
+        return helper.render_doc_template(request.url_rule.rule)
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
@@ -229,8 +231,10 @@ def process_team_keys(keys):
 
 
 # Takes parameters: str(event_key), str(comp_level), bool(uses_sets)
-@app.route('/event/matches', methods=['POST'])
+@app.route('/event/matches', methods=['POST','GET'])
 def get_matches():
+    if request.method == 'GET':
+        return helper.render_doc_template(request.url_rule.rule)
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
@@ -276,21 +280,23 @@ def get_matches():
     write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
     return jsonify(all_data), 200
 
-@app.route('/events', methods=['POST'])
-def get_events():
+@app.route('/events', methods=['POST', 'GET'])
+def events():
+    if request.method == 'GET':
+        return helper.render_doc_template(request.url_rule.rule)
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
         return abort(403)
     
-    filename = json_in['year'] + '.events.all.txt'
+    filename = str(json_in['year']) + '.events.all.txt'
     txt, update = update_cache((os.path.join(cache_folder,CACHE_CONST,filename)))
 
     if not update:
         return jsonify(txt),200
     
     r = requests.get(
-        url=os.path.join(BASE_API_URL, 'events', json_in['year'] , 'simple'),
+        url=os.path.join(BASE_API_URL, 'events', str(json_in['year']) , 'simple'),
         headers=auth_headers())
     if r.status_code == 404:
         abort(404)

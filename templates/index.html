@@ -28,19 +28,16 @@
       teams.
     </li>
     <li>
+      <a href="/events">/events</a> POST - Takes in 'year' and returns the event
+      name and keys for all events that year.
+    </li>
+    <li>
       <a href="/event/teams">/event/teams</a> POST - Takes in an 'event_key' and
       returns teams at the event.
     </li>
     <li>
       <a href="/event/matches">/event/matches</a> POST - Takes in an
       'event_key', 'comp_level', 'uses_sets' and returns teams on each.
-      <br />
-      'comp_level' can be 'qm' for quals, 'qf' for quarterfinals. It's the same
-      verbiage used in the TBA API.
-      <br />
-      If, 'uses_sets' is true, the data is formatted as
-      'set_number,match_number' to accomodate for matches like QM 1-10.
-      Otherwise, it is numerical.
     </li>
   </ul>
 </body>

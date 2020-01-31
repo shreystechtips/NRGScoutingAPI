@@ -1,0 +1,14 @@
+Type of Request: POST
+Parameters: 
+- 'event_key' (string) using TBA format (e.g. 2020pncmp)
+- 'comp_level' (string) ['qm': quals, 'qf': quarterfinals, 'sf': semifinals, 'f': finals]
+- 'uses_sets' (bool) False converts the 1,2 (match 2) for qual matches into 2 to remove complexity
+Response Body Format:
+///TODO: NOT FULLY ACCURATE
+[
+    {
+        'team_number': 948, 
+        'nickname': 'Newport Robotics Group (NRG)'
+    },
+    ... for all matches at event
+]

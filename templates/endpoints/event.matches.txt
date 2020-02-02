@@ -4,11 +4,19 @@ Parameters:
 - 'comp_level' (string) ['qm': quals, 'qf': quarterfinals, 'sf': semifinals, 'f': finals]
 - 'uses_sets' (bool) False converts the 1,2 (match 2) for qual matches into 2 to remove complexity
 Response Body Format:
-///TODO: NOT FULLY ACCURATE
+Matches NOT guaranteed to be in order
 [
-    {
-        'team_number': 948, 
-        'nickname': 'Newport Robotics Group (NRG)'
+    "1": {
+        "blue": [
+            118,
+            254,
+            1619
+        ],
+        "red": [
+            2056,
+            1114,
+            148
+        ]
     },
     ... for all matches at event
 ]

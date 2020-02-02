@@ -1,0 +1,6 @@
+{
+  "/teams": ["year"],
+  "/event/teams": ["event_key"],
+  "/event/matches": ["event_key", "comp_level", "uses_sets"],
+  "/events": ["year"]
+}

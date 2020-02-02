@@ -33,7 +33,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 3
 
 cache_folder = os.path.join('cache/')
-
+request_values = json.loads(open("request_values.json", "rb").read())
 BASE_API_URL = "https://www.thebluealliance.com/api/v3"
 API_KEY = os.getenv("TBA_KEY")
 
@@ -59,6 +59,12 @@ def check_key():
         'auth_key', 'b\'\'' + request.headers.get('API-Key') + '\'\'', '\''))
     return not cur.fetchone() == None
 
+def check_request():
+    endpt = request.url_rule.rule
+    request_json = request.json
+    for key in request_values[endpt]:
+        if not key in request_json:
+            abort(400, "Not all parameters are submitted")
 
 def auth_headers():
     return {'X-TBA-Auth-Key': API_KEY}
@@ -178,6 +184,7 @@ def login():
 def teams():
     if request.method == 'GET':
         return helper.render_doc_template(request.url_rule.rule)
+    check_request()
     CACHE_CONST = 'teams'
     json_in = request.json
     if not check_key():
@@ -189,6 +196,7 @@ def teams():
 def event_teams():
     if request.method == 'GET':
         return helper.render_doc_template(request.url_rule.rule)
+    check_request()
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
@@ -235,6 +243,7 @@ def process_team_keys(keys):
 def get_matches():
     if request.method == 'GET':
         return helper.render_doc_template(request.url_rule.rule)
+    check_request()
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():
@@ -284,6 +293,7 @@ def get_matches():
 def events():
     if request.method == 'GET':
         return helper.render_doc_template(request.url_rule.rule)
+    check_request()
     CACHE_CONST = 'event'
     json_in = request.json
     if not check_key():

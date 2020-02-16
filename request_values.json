@@ -2,5 +2,6 @@
   "/teams": ["year"],
   "/event/teams": ["event_key"],
   "/event/matches": ["event_key", "comp_level", "uses_sets"],
-  "/events": ["year"]
+  "/events": ["year"],
+  "/zebra": ["event_key", "match_key", "red_relative_keys"]
 }

@@ -1,11 +1,12 @@
 from flask import request, abort, jsonify, json, render_template, redirect, url_for
+import io
 import flask
 from flask_cors import CORS
 import requests
 from datetime import datetime, timedelta
 import os
-import re
-import jwt
+# import re
+# import jwt
 from passlib.context import CryptContext
 from binascii import hexlify
 from flask_bcrypt import Bcrypt
@@ -17,12 +18,22 @@ import helper
 load_dotenv()
 
 config = {
-  "apiKey": os.getenv("FIREBASE_KEY"),
-  "authDomain": str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseapp.com",
-  "storageBucket": str(os.getenv("FIREBASE_PROJ_NAME")) + ".appspot.com",
-  "databaseURL": "https://" + str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseio.com",
-  "serviceAccount": helper.generate_google_service("service.json")
+    "apiKey": os.getenv("FIREBASE_KEY"),
+    "authDomain": str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseapp.com",
+    "storageBucket": str(os.getenv("FIREBASE_PROJ_NAME")) + ".appspot.com",
+    "databaseURL": "https://" + str(os.getenv("FIREBASE_PROJ_NAME")) + ".firebaseio.com",
+    "serviceAccount": helper.generate_google_service("service.json")
 }
+
+firebase = pyrebase.initialize_app(config)
+storage = firebase.storage()
+
+try:
+    # INIT FIREBASE
+    os.remove("service.json")
+except:
+    None
+
 
 app = flask.Flask(__name__)
 CORS(app)
@@ -45,19 +56,12 @@ cur = con.cursor()
 postgres_insert_query = """ INSERT INTO users (email, password, team, auth_key) VALUES (%s,%s,%s,%s)"""
 postgres_exists_query = """ select * from users where {0} = {2}{1}{2} """
 
-# INIT FIREBASE
-firebase = pyrebase.initialize_app(config)
-storage = firebase.storage()
-try:
-    os.remove("service.json")
-except:
-    None   
-
 
 def check_key():
     cur.execute(postgres_exists_query.format(
         'auth_key', 'b\'\'' + request.headers.get('API-Key') + '\'\'', '\''))
     return not cur.fetchone() == None
+
 
 def check_request():
     endpt = request.url_rule.rule
@@ -65,6 +69,7 @@ def check_request():
     for key in request_values[endpt]:
         if not key in request_json:
             abort(400, "Not all parameters are submitted")
+
 
 def auth_headers():
     return {'X-TBA-Auth-Key': API_KEY}
@@ -75,15 +80,17 @@ def simplify_data(data):
     return temp
 
 
-def update_cache(path):
+def update_cache(path, url):
     storage.child('/')
     try:
         if not os.path.exists(path):
             storage.child(path).download(path)
-        yearfile = open(path)
+        yearfile = open(path, 'r')
         try:
             date_file = datetime.strptime(yearfile.readline().strip(), '%c')
-            if (datetime.utcnow()-date_file).days < 7:
+            TBA_file = datetime.strptime(
+                helper.file_last_updated(url), '%a, %d %b %Y %X %Z')
+            if date_file > TBA_file:
                 return json.loads(yearfile.readline()), False
         except:
             return [], True
@@ -110,7 +117,9 @@ def write_to_file(data, file_path, filename):
 def get_teams(year, CACHE_CONST):
     filename = str(year) + '.txt'
     txt, update = update_cache(os.path.join(
-        cache_folder, CACHE_CONST, filename))
+        cache_folder, CACHE_CONST, filename), os.path.join(BASE_API_URL, "teams", str(year),
+                                                           str(0), 'simple'))
+
     if not update:
         return txt
 
@@ -199,17 +208,18 @@ def event_teams():
     check_request()
     CACHE_CONST = 'event'
     json_in = request.json
+    REQUEST_URL = os.path.join(BASE_API_URL, 'event',
+                               json_in['event_key'], 'teams')
     if not check_key():
         return jsonify(["Not Allowed, please use a valid API Key"]), 403
 
     filename = json_in['event_key'] + '.txt'
     txt,  update = update_cache(os.path.join(
-        cache_folder, CACHE_CONST, filename))
+        cache_folder, CACHE_CONST, filename), REQUEST_URL)
     if not update:
         return jsonify(txt), 200
 
-    r = requests.get(url=os.path.join(BASE_API_URL, 'event',
-                                      json_in['event_key'], 'teams'), headers=auth_headers())
+    r = requests.get(url=REQUEST_URL, headers=auth_headers())
     if r.status_code == 404:
         abort(404)
 
@@ -239,30 +249,32 @@ def process_team_keys(keys):
 
 
 # Takes parameters: str(event_key), str(comp_level), bool(uses_sets)
-@app.route('/event/matches', methods=['POST','GET'])
+@app.route('/event/matches', methods=['POST', 'GET'])
 def get_matches():
     if request.method == 'GET':
         return helper.render_doc_template(request.url_rule.rule)
     check_request()
     CACHE_CONST = 'event'
     json_in = request.json
+    REQUEST_URL = os.path.join(BASE_API_URL, 'event', json_in['event_key'],
+                               'matches', 'simple')
+
     if not check_key():
         return abort(403)
 
     filename = json_in['event_key'] + '.matches.' + json_in[
         'comp_level'] + '.' + str(json_in['uses_sets']) + '.txt'
 
-    REGEX_PATTERN = re.compile("(^\w+_" + json_in['comp_level'] + "\d+)$")
+    # REGEX_PATTERN = re.compile("(^\w+_" + json_in['comp_level'] + "\d+)$")
 
     txt, update = update_cache(
-        os.path.join(cache_folder, CACHE_CONST, filename))
+        os.path.join(cache_folder, CACHE_CONST, filename), REQUEST_URL)
 
     if not update:
         return jsonify(txt), 200
 
     r = requests.get(
-        url=os.path.join(BASE_API_URL, 'event', json_in['event_key'],
-                         'matches', 'simple'),
+        url=REQUEST_URL,
         headers=auth_headers())
     if r.status_code == 404:
         abort(404)
@@ -289,6 +301,7 @@ def get_matches():
     write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
     return jsonify(all_data), 200
 
+
 @app.route('/events', methods=['POST', 'GET'])
 def events():
     if request.method == 'GET':
@@ -296,32 +309,78 @@ def events():
     check_request()
     CACHE_CONST = 'event'
     json_in = request.json
+    REQUEST_URL = os.path.join(BASE_API_URL, 'events',
+                               str(json_in['year']), 'simple')
+
     if not check_key():
         return abort(403)
-    
+
     filename = str(json_in['year']) + '.events.all.txt'
-    txt, update = update_cache((os.path.join(cache_folder,CACHE_CONST,filename)))
+    txt, update = update_cache(
+        (os.path.join(cache_folder, CACHE_CONST, filename)), REQUEST_URL)
 
     if not update:
-        return jsonify(txt),200
-    
+        return jsonify(txt), 200
+
     r = requests.get(
-        url=os.path.join(BASE_API_URL, 'events', str(json_in['year']) , 'simple'),
+        url=REQUEST_URL,
         headers=auth_headers())
     if r.status_code == 404:
         abort(404)
 
     all_data = []
     r = r.json()
+    print(r)
     for item in r:
-        all_data.append({'name':item['name'],'key':item['key']})
-    write_to_file(all_data, os.path.join(cache_folder, CACHE_CONST), filename)
+        all_data.append({'name': item['name'], 'key': item['key']})
+    write_to_file(all_data, os.path.join(
+        cache_folder, CACHE_CONST), filename)
     return jsonify(all_data), 200
 
 
-# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_key_simple(keys):
+    string = ''
+    for key in keys:
+        string += '.' + key + '.'
 
 
+@app.route('/zebra', methods=['POST', 'GET'])
+def zebra_img():
+    if request.method == 'GET':
+        return helper.render_doc_template(request.url_rule.rule)
+    check_request()
+    json_in = request.json
+    REQUEST_URL = os.path.join(BASE_API_URL, 'match',
+                               str(json_in['event_key']) + '_' + str(json_in['match_key']), 'zebra_motionworks')
+    CACHE_CONST = 'event/' + json_in['event_key'] + '/'
+
+    json_in['red_relative_keys'].sort()
+
+    filename = json_in['match_key'] + \
+        str(json_in['red_relative_keys']) + '.png'
+
+    full_path = os.path.join(cache_folder, CACHE_CONST, filename)
+
+    try:
+        if not os.path.exists(full_path):
+            storage.child(full_path).download(full_path)
+    except:
+        None
+
+    if os.path.exists(full_path):
+        return flask.send_file(filename_or_fp=full_path, mimetype='image/png')
+
+    helper.plot_data(
+        json_in['event_key'], json_in['match_key'], os.path.join(cache_folder, CACHE_CONST), json_in['red_relative_keys'], fout=filename)
+
+    # Put File on Firebase
+    storage.child('/')
+    storage.child(full_path).put(full_path)
+
+    return flask.send_file(filename_or_fp=full_path, mimetype='image/png')
+# attachment_filename=os.path.join(cache_folder, CACHE_CONST, filename),
+
+    # pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # def create_access_token(*, data: dict, expires_delta: timedelta = None):
 #     to_encode = data.copy()
 #     if expires_delta:
@@ -331,17 +390,13 @@ def events():
 #     to_encode.update({"exp": expire})
 #     encoded_jwt = jwt.encode(to_encode, SECRET, algorithm=ALGORITHM)
 #     return encoded_jwt
-
-
 # def get_secret(token: str):
 #     try:
 #         payload = jwt.decode(token, SECRET, algorithms=[ALGORITHM])
 #     except:
 #         raise Exception()
-
 #     return payload
-
-
 if __name__ == '__main__':
+    storage = firebase.storage()
     app.run()
 ssl_context = ('cert.pem', 'key.pem')
